@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Trophy, RotateCcw, Zap, Timer, Star, User } from "lucide-react";
+import { Trophy, RotateCcw, Zap, Timer, Star, User, Target } from "lucide-react";
 
 type Operation = "+" | "-" | "*";
 
@@ -17,30 +17,30 @@ interface Problem {
 }
 
 const generateProblem = (difficulty: number): Problem => {
-  const ops: Operation[] = ["+", "-", "*"];
-  const op = ops[Math.floor(Math.random() * (difficulty > 5 ? 3 : 2))];
+  const ops: Operation[] = ["+", "-"]; // Simplified for kids
+  const op = ops[Math.floor(Math.random() * ops.length)];
   let a: number, b: number, answer: number;
 
+  const maxRange = Math.min(20 + Math.floor(difficulty * 5), 100);
+
   if (op === "+") {
-    a = Math.floor(Math.random() * (10 + difficulty * 2)) + 1;
-    b = Math.floor(Math.random() * (10 + difficulty * 2)) + 1;
+    a = Math.floor(Math.random() * (maxRange / 2)) + 1;
+    b = Math.floor(Math.random() * (maxRange / 2)) + 1;
     answer = a + b;
-  } else if (op === "-") {
-    a = Math.floor(Math.random() * (15 + difficulty * 2)) + 5;
+  } else {
+    // Subtraction - ensure positive result
+    a = Math.floor(Math.random() * (maxRange - 5)) + 5;
     b = Math.floor(Math.random() * a) + 1;
     answer = a - b;
-  } else {
-    a = Math.floor(Math.random() * (5 + Math.floor(difficulty / 2))) + 2;
-    b = Math.floor(Math.random() * (5 + Math.floor(difficulty / 2))) + 2;
-    answer = a * b;
   }
 
   const options = new Set<number>();
   options.add(answer);
   while (options.size < 3) {
-    const offset = Math.floor(Math.random() * 10) - 5;
-    const wrong = answer + (offset === 0 ? 3 : offset);
-    if (wrong > 0) options.add(wrong);
+    const spread = difficulty > 5 ? 5 : 10;
+    const offset = Math.floor(Math.random() * spread) - Math.floor(spread / 2);
+    const wrong = answer + (offset === 0 ? 2 : offset);
+    if (wrong > 0 && wrong !== answer) options.add(wrong);
   }
 
   return {
@@ -66,49 +66,67 @@ function Character({ color, isPulling, isLeft, gender }: { color: string, isPull
       className="drop-shadow-2xl"
       animate={{ rotate: rotation }}
     >
-      {/* Body */}
-      <path 
-        d="M60 60 L60 120" 
-        stroke={color} 
-        strokeWidth="12" 
-        strokeLinecap="round" 
-      />
+      <defs>
+        <pattern id="atlasPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+          <circle cx="10" cy="10" r="8" fill="#fff" fillOpacity="0.2" />
+          <path d="M0 0 L20 20 M20 0 L0 20" stroke="#fff" strokeOpacity="0.1" strokeWidth="1" />
+        </pattern>
+      </defs>
+
+      {/* Clothing */}
+      {gender === 'boy' ? (
+        <rect x="52" y="60" width="16" height="60" rx="8" fill={color} />
+      ) : (
+        <path d="M60 60 L35 120 L85 120 Z" fill={color} />
+      )}
       
+      {/* Atlas pattern overlay for girl's dress */}
+      {gender === 'girl' && <path d="M60 60 L35 120 L85 120 Z" fill="url(#atlasPattern)" />}
+
       {/* Legs */}
       <motion.path 
-        d={isPulling ? "M60 120 L30 170 M60 120 L90 170" : "M60 120 L40 170 M60 120 L80 170"}
+        d={isPulling ? "M60 120 L35 170 M60 120 L85 170" : "M60 120 L45 170 M60 120 L75 170"}
         stroke={color} 
-        strokeWidth="12" 
+        strokeWidth="10" 
         strokeLinecap="round"
-        animate={isPulling ? { d: isLeft ? "M60 120 L20 160 M60 120 L50 170" : "M60 120 L100 160 M60 120 L70 170" } : {}}
+        animate={isPulling ? { d: isLeft ? "M60 120 L25 160 M60 120 L55 170" : "M60 120 L95 160 M60 120 L65 170" } : {}}
       />
 
       {/* Arms (Pulling the rope) */}
       <motion.path 
-        d={isLeft ? "M60 80 L120 80" : "M60 80 L0 80"} 
+        d={isLeft ? "M60 85 L120 85" : "M60 85 L0 85"} 
         stroke={color} 
-        strokeWidth="10" 
+        strokeWidth="8" 
         strokeLinecap="round" 
-        animate={isPulling ? { strokeWidth: 14 } : {}}
       />
 
       {/* Head */}
-      <circle cx="60" cy="40" r="25" fill="#ffd1a9" />
+      <circle cx="60" cy="40" r="22" fill="#ffd1a9" />
       
-      {/* Face/Hair */}
+      {/* Hat (Do'ppi) */}
       {gender === 'boy' ? (
-        <path d="M35 40 Q60 10 85 40" fill={color} />
+        <g>
+          <path d="M40 25 L80 25 L75 12 L45 12 Z" fill="#111" />
+          {/* Do'ppi patterns */}
+          <path d="M48 18 L52 18 M68 18 L72 18" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M58 15 L62 15" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
+        </g>
       ) : (
-        <path d="M35 45 Q60 5 85 45 L90 60 Q60 50 30 60 Z" fill={color} />
+        <g>
+          <path d="M42 22 Q60 10 78 22 L75 15 Q60 5 45 15 Z" fill="#ec4899" />
+          <circle cx="50" cy="18" r="1.5" fill="white" />
+          <circle cx="60" cy="15" r="1.5" fill="white" />
+          <circle cx="70" cy="18" r="1.5" fill="white" />
+        </g>
       )}
       
       {/* Eyes */}
-      <circle cx="50" cy="38" r="3" fill="#333" />
-      <circle cx="70" cy="38" r="3" fill="#333" />
+      <circle cx="53" cy="42" r="2.5" fill="#333" />
+      <circle cx="67" cy="42" r="2.5" fill="#333" />
       
       {/* Mouth */}
       <motion.path 
-        d={isPulling ? "M50 50 Q60 60 70 50" : "M50 50 Q60 55 70 50"} 
+        d={isPulling ? "M53 52 Q60 60 67 52" : "M55 52 Q60 56 65 52"} 
         stroke="#333" 
         strokeWidth="2" 
         fill="none" 
@@ -137,34 +155,30 @@ function TeamPanel({
   return (
     <motion.div 
       animate={isShaking ? { x: [-15, 15, -15, 15, 0], scale: [1, 1.05, 1] } : {}}
-      className={`p-10 rounded-[3.5rem] bg-slate-900/50 border-4 border-white/5 backdrop-blur-xl shadow-2xl flex flex-col items-center gap-10 relative overflow-hidden group`}
+      className={`p-10 rounded-[4rem] bg-white shadow-2xl flex flex-col items-center gap-10 relative overflow-hidden border-8 ${isBlue ? 'border-blue-400' : 'border-pink-400'}`}
     >
-      {/* Background Glow */}
-      <div className={`absolute -top-20 -right-20 w-48 h-48 rounded-full blur-[80px] opacity-10 transition-opacity group-hover:opacity-20 ${isBlue ? 'bg-blue-600' : 'bg-pink-600'}`} />
-      
       <div className="flex items-center gap-4 relative">
-        <div className={`w-3 h-3 rounded-full ${isBlue ? 'bg-blue-500 shadow-[0_0_10px_#3b82f6]' : 'bg-pink-500 shadow-[0_0_10px_#ec4899]'} animate-pulse`} />
-        <span className="font-black text-white/50 uppercase tracking-[0.4em] text-sm">{teamName}</span>
+        <Target className={`w-8 h-8 ${isBlue ? 'text-blue-500' : 'text-pink-500'}`} />
+        <span className="font-black text-slate-400 uppercase tracking-widest text-lg">{teamName}</span>
       </div>
 
-      <div className="text-7xl font-black text-white my-4 font-mono tracking-tighter tabular-nums drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
+      <div className="text-8xl font-black text-slate-800 my-4 font-mono tracking-tighter drop-shadow-sm">
         {problem.text}
       </div>
 
-      <div className="grid grid-cols-1 w-full gap-5 relative">
+      <div className="grid grid-cols-1 w-full gap-4 relative">
         {problem.options.map((option, idx) => (
           <button
             key={`${problem.id}-${idx}`}
             disabled={disabled}
             onClick={() => onAnswer(option)}
             className={`
-              relative w-full py-6 text-3xl font-black rounded-[2rem] transition-all overflow-hidden
-              ${disabled ? 'opacity-20 cursor-not-allowed' : 'hover:scale-[1.03] hover:-translate-y-1 active:scale-95'}
-              bg-slate-800 border-2 border-white/5 hover:border-white/20 text-white shadow-xl
+              w-full py-6 text-4xl font-black rounded-[2.5rem] transition-all
+              ${disabled ? 'opacity-20 cursor-not-allowed' : 'hover:scale-[1.03] active:scale-95'}
+              ${isBlue ? 'bg-blue-500 hover:bg-blue-600' : 'bg-pink-500 hover:bg-pink-600'} text-white shadow-lg
             `}
           >
-            <div className={`absolute inset-0 bg-gradient-to-r ${isBlue ? 'from-blue-600 to-blue-400' : 'from-pink-600 to-pink-400'} opacity-0 group-hover:opacity-20 transition-opacity`} />
-            <span className="relative z-10">{option}</span>
+            {option}
           </button>
         ))}
       </div>
@@ -268,30 +282,45 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-slate-100 flex flex-col font-sans overflow-hidden selection:bg-yellow-400 selection:text-black">
-      {/* Dynamic Background Elements */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[10%] left-[15%] w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-[10%] right-[15%] w-64 h-64 bg-pink-600/10 rounded-full blur-[100px] animate-pulse delay-1000" />
+    <div className="min-h-screen bg-sky-300 text-slate-900 flex flex-col font-sans overflow-hidden selection:bg-yellow-400 selection:text-black relative">
+      {/* Playful Background Elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <motion.div 
+          animate={{ x: [0, 100, 0], opacity: [0.3, 0.6, 0.3] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute top-20 left-10 text-8xl"
+        >☁️</motion.div>
+        <motion.div 
+          animate={{ x: [0, -150, 0], opacity: [0.2, 0.5, 0.2] }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+          className="absolute top-40 right-20 text-7xl"
+        >☁️</motion.div>
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[-50px] right-[-50px] text-9xl text-yellow-400 filter drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]"
+        >☀️</motion.div>
+        {/* Grass Bottom */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-green-500 rounded-t-[100%] scale-x-110 translate-y-10 border-t-8 border-green-600" />
       </div>
 
       {/* Header HUD */}
-      <header className="p-6 md:p-10 flex items-center justify-center z-20">
+      <header className="p-4 md:p-6 flex items-center justify-center z-20">
         <motion.div 
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-slate-900/80 backdrop-blur-xl border border-white/10 px-8 py-3 rounded-full flex items-center gap-8 shadow-2xl shadow-black/50"
+          className="bg-white/90 backdrop-blur-xl border-4 border-sky-400/30 px-10 py-4 rounded-[2rem] flex items-center gap-8 shadow-2xl"
         >
           <div className="flex items-center gap-3">
-            <Zap className="text-yellow-400 fill-yellow-400 w-6 h-6" />
-            <span className="font-black tracking-tighter text-2xl bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">MATH STRIKE</span>
+            <Zap className="text-yellow-500 fill-yellow-500 w-8 h-8" />
+            <span className="font-black tracking-tight text-3xl text-sky-900 uppercase">MATEMATIKA JANGI</span>
           </div>
           
           {gameStarted && (
-            <div className="flex items-center gap-4 border-l border-white/10 pl-8">
-              <div className={`flex items-center gap-2 px-4 py-1.5 rounded-2xl font-mono text-xl font-bold border-2 transition-colors ${timeLeft < 10 ? 'bg-red-500/20 border-red-500 text-red-500 animate-pulse' : 'bg-white/5 border-white/20'}`}>
-                <Timer className="w-5 h-5" />
-                {String(Math.floor(timeLeft / 60)).padStart(2, '0')}:{String(timeLeft % 60).padStart(2, '0')}
+            <div className="flex items-center gap-4 border-l-4 border-sky-100 pl-8">
+              <div className={`flex items-center gap-2 px-6 py-2 rounded-2xl font-mono text-2xl font-bold border-4 transition-colors ${timeLeft < 10 ? 'bg-red-100 border-red-500 text-red-600 animate-pulse' : 'bg-sky-50 border-sky-200 text-sky-700'}`}>
+                <Timer className="w-6 h-6" />
+                {timeLeft}s
               </div>
             </div>
           )}
@@ -301,13 +330,11 @@ export default function App() {
       <main className="flex-1 relative flex flex-col items-center justify-center p-4">
         
         {/* Playfield Container */}
-        <div className="w-full max-w-6xl aspect-[21/9] bg-slate-900 rounded-[4rem] border-4 border-white/5 relative overflow-hidden flex items-center justify-center shadow-2xl">
-          <div className="absolute inset-0 opacity-[0.03]" 
-               style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
-          
-          <div className="absolute inset-y-0 left-[10%] w-[2px] bg-gradient-to-b from-transparent via-red-500 to-transparent opacity-30 shadow-[0_0_15px_rgba(239,68,68,0.5)]" />
-          <div className="absolute inset-y-0 right-[10%] w-[2px] bg-gradient-to-b from-transparent via-red-500 to-transparent opacity-30 shadow-[0_0_15px_rgba(239,68,68,0.5)]" />
-          <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-white/10 dashed" />
+        <div className="w-full max-w-6xl aspect-[21/9] bg-green-100/40 backdrop-blur-sm rounded-[5rem] border-8 border-white/80 relative overflow-hidden flex items-center justify-center shadow-[0_20px_60px_rgba(0,0,0,0.1)]">
+          {/* Finish Lines */}
+          <div className="absolute inset-y-0 left-[8%] w-4 bg-red-400/30 rounded-full" />
+          <div className="absolute inset-y-0 right-[8%] w-4 bg-red-400/30 rounded-full" />
+          <div className="absolute left-1/2 top-0 bottom-0 w-2 bg-white/50 dashed" />
 
           {/* Particle Effects */}
           <AnimatePresence>
@@ -390,42 +417,42 @@ export default function App() {
                   <motion.span animate={{ y: [0, -20, 0] }} transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}>👦</motion.span>
                   <motion.span animate={{ y: [0, -20, 0] }} transition={{ repeat: Infinity, duration: 2, ease: "easeInOut", delay: 0.5 }}>👧</motion.span>
                 </div>
-                <h2 className="text-4xl md:text-6xl font-black text-white mb-2 uppercase tracking-tight italic bg-gradient-to-b from-white to-slate-500 bg-clip-text text-transparent">MATH STRIKE</h2>
-                <p className="text-yellow-400 font-bold mb-8 text-sm uppercase tracking-widest opacity-80 flex items-center justify-center gap-2">
-                  <Star className="w-3 h-3 fill-yellow-400" />
+                <h2 className="text-5xl md:text-7xl font-black text-sky-900 mb-2 uppercase tracking-tight italic">QUVNOQ MATEMATIKA</h2>
+                <p className="text-sky-600 font-bold mb-8 text-lg uppercase tracking-widest flex items-center justify-center gap-2">
+                  <Star className="w-5 h-5 fill-sky-600" />
                   O'yin yaratuvchisi: Xayrillayeva Gulinigor
-                  <Star className="w-3 h-3 fill-yellow-400" />
+                  <Star className="w-5 h-5 fill-sky-600" />
                 </p>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10 text-left">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 text-left">
                   <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400 w-5 h-5" />
+                    <User className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500 w-6 h-6" />
                     <input 
                       type="text" 
                       value={leftName}
                       onChange={(e) => setLeftName(e.target.value)}
-                      placeholder="1-o'yinchi ismi"
-                      className="w-full bg-slate-800 border-2 border-blue-500/30 focus:border-blue-500 text-white pl-12 pr-4 py-4 rounded-3xl outline-none transition-all placeholder:text-slate-600 font-bold"
+                      placeholder="1-bola ismi"
+                      className="w-full bg-sky-50 border-4 border-blue-200 focus:border-blue-400 text-sky-900 pl-14 pr-6 py-5 rounded-[2.5rem] outline-none transition-all placeholder:text-sky-300 font-black text-xl"
                     />
                   </div>
                   <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-400 w-5 h-5" />
+                    <User className="absolute left-5 top-1/2 -translate-y-1/2 text-pink-500 w-6 h-6" />
                     <input 
                       type="text" 
                       value={rightName}
                       onChange={(e) => setRightName(e.target.value)}
-                      placeholder="2-o'yinchi ismi"
-                      className="w-full bg-slate-800 border-2 border-pink-500/30 focus:border-pink-500 text-white pl-12 pr-4 py-4 rounded-3xl outline-none transition-all placeholder:text-slate-600 font-bold"
+                      placeholder="2-bola ismi"
+                      className="w-full bg-pink-50 border-4 border-pink-200 focus:border-pink-400 text-pink-900 pl-14 pr-6 py-5 rounded-[2.5rem] outline-none transition-all placeholder:text-pink-300 font-black text-xl"
                     />
                   </div>
                 </div>
 
                 <button 
                   onClick={startGame}
-                  className="group relative w-full py-8 bg-white text-slate-900 rounded-[2.5rem] overflow-hidden transition-all hover:scale-105 active:scale-95"
+                  className="group relative w-full py-8 bg-sky-600 text-white rounded-[3rem] overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-xl shadow-sky-200"
                 >
                   <div className="absolute inset-0 bg-yellow-400 translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
-                  <span className="relative z-10 text-3xl font-black tracking-widest italic uppercase">JANGNI BOSHLASH!</span>
+                  <span className="relative z-10 text-4xl font-black tracking-widest italic uppercase">BOSHLAYMIZ!</span>
                 </button>
               </motion.div>
             </motion.div>
